@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#00bcd4">
+    <title>Flappy Fish PWA</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="assets/images/icon.png" />
+    <link rel="apple-touch-icon" href="assets/images/icon.png" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        background-color: black !important;
+      }
+      canvas {
+        border: 1px solid black;
+      }
+      #startScreen,
+      #gameOverScreen {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #startScreen {
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border-radius: 10px;
+      }
+      #playButton:hover {
+        transform: scale(1.1);
+        transition: transform 0.2s;
+      }
+      .fish-bob {
+        animation: bob 2s infinite;
+      }
+      @keyframes bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+    </style>
+  </head>
+  <body class="flex justify-center items-center h-screen">
+    <div class="text-center">
+      <h1 class="text-2xl font-bold mb-2">Flappy Fish</h1>
+      <canvas id="gameCanvas" width="400" height="600"></canvas>
+      <div id="startScreen" class="p-8 rounded-lg text-center max-w-md">
+        <h2
+          class="text-3xl font-bold mb-4"
+          style="text-shadow: 2px 2px #3d3d3d"
+        >
+          Flappy Fish
+        </h2>
+        <img
+          src="assets/images/fish.png"
+          class="fish-bob mx-auto mb-4"
+          style="width: 40px; height: 30px"
+        />
+        <p class="mb-2 text-lg font-bold">How to Play:</p>
+        <ul class="list-disc list-inside mb-6 text-left">
+          <li>Tap, click or press <strong>Space</strong> to swim up.</li>
+          <li>Pass through pipe gaps to score.</li>
+          <li>Avoid pipes and screen edges!</li>
+        </ul>
+        <button
+          id="playButton"
+          class="bg-green-500 text-white px-6 py-3 rounded-lg text-xl hover:bg-green-600"
+        >
+          Play
+        </button>
+      </div>
+      <div id="gameOverScreen" class="bg-white p-6 rounded shadow-lg">
+        <h2 class="text-xl font-bold">Game Over</h2>
+        <p id="finalScore" class="my-2"></p>
+        <button
+          id="playAgain"
+          class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Play Again
+        </button>
+      </div>
+      <p id="offlineStatus" class="mt-2 text-red-500 hidden">
+        No Internet Connection
+      </p>
+    </div>
+
+    <audio id="bgMusic" loop>
+      <source src="assets/audio/bgmusic.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="flapSound">
+      <source src="assets/audio/flap.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="hitSound">
+      <source src="assets/audio/hit.mp3" type="audio/mpeg" />
+    </audio>
+
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const bgMusic = document.getElementById("bgMusic");
+      const flapSound = document.getElementById("flapSound");
+      const hitSound = document.getElementById("hitSound");
+      const startScreen = document.getElementById("startScreen");
+      const playButton = document.getElementById("playButton");
+      const gameOverScreen = document.getElementById("gameOverScreen");
+      const finalScoreText = document.getElementById("finalScore");
+      const playAgainBtn = document.getElementById("playAgain");
+      const offlineStatus = document.getElementById("offlineStatus");
+
+      // Load images
+      const backgroundImg = new Image();
+      backgroundImg.src = "assets/images/background.png";
+      const fishImg = new Image();
+      fishImg.src = "assets/images/fish.png";
+
+      // Game variables - adjusted for better control
+      let fish = { x: 100, y: 300, vy: 0, width: 50, height: 50 };
+      let pipes = [];
+      let score = 0;
+      let gameOver = false;
+      let gameStarted = false;
+      let gravity = 0.45; // Faster falling speed
+      let flap = -6; // Stronger flap power
+      let pipeSpeed = 2.5; // Faster pipe movement
+      let pipeGap = 150; // Slightly smaller gap for challenge
+      let frameCount = 0;
+
+      function resetGame() {
+        fish = { x: 100, y: 300, vy: 0, width: 50, height: 50 };
+        pipes = [];
+        score = 0;
+        gameOver = false;
+        frameCount = 0;
+        gameOverScreen.style.display = "none";
+        bgMusic.play().catch(() => console.log("Audio play failed"));
+        loop();
+      }
+
+      function drawBackground() {
+        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+      }
+
+      function drawFish() {
+        const angle = Math.min(Math.max(fish.vy * 0.15, -0.5), 1); // clamp between -0.5 and 1 radians
+        ctx.save();
+        ctx.translate(fish.x + fish.width / 2, fish.y + fish.height / 2);
+        ctx.rotate(angle);
+        ctx.drawImage(
+          fishImg,
+          -fish.width / 2,
+          -fish.height / 2,
+          fish.width,
+          fish.height
+        );
+        ctx.restore();
+      }
+
+      function drawPipes() {
+        pipes.forEach((pipe) => {
+          // Draw top pipe
+          ctx.fillStyle = "#1b2f11";
+          ctx.fillRect(pipe.x, 0, 50, pipe.top);
+          ctx.fillStyle = "#1b2f11";
+          ctx.fillRect(pipe.x, pipe.bottom, 50, canvas.height - pipe.bottom);
+        });
+      }
+
+      function updateFish() {
+        fish.vy += gravity;
+        fish.y += fish.vy;
+
+        // Add terminal velocity (maximum falling speed)
+        if (fish.vy > 6) {
+          // Reduced maximum falling speed
+          fish.vy = 6;
+        }
+
+        if (fish.y + fish.height > canvas.height || fish.y < 0) {
+          endGame();
+        }
+      }
+
+      function updatePipes() {
+        if (frameCount % 120 === 0) {
+          let top = Math.random() * (canvas.height - pipeGap - 100) + 50;
+          pipes.push({
+            x: canvas.width,
+            top: top,
+            bottom: top + pipeGap,
+            scored: false,
+          });
+        }
+        pipes.forEach((pipe) => {
+          pipe.x -= pipeSpeed;
+          if (!pipe.scored && pipe.x + 50 < fish.x) {
+            score++;
+            pipe.scored = true;
+          }
+          if (
+            fish.x + fish.width > pipe.x &&
+            fish.x < pipe.x + 50 &&
+            (fish.y < pipe.top || fish.y + fish.height > pipe.bottom)
+          ) {
+            endGame();
+          }
+        });
+        pipes = pipes.filter((pipe) => pipe.x + 50 > 0);
+      }
+
+      function drawScore() {
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.font = "30px Arial";
+        ctx.strokeText(`${score}`, canvas.width / 2, 50);
+        ctx.fillText(`${score}`, canvas.width / 2, 50);
+      }
+
+      function endGame() {
+        gameOver = true;
+        hitSound.play();
+        bgMusic.pause();
+        gameOverScreen.style.display = "block";
+        finalScoreText.textContent = `Final Score: ${score}`;
+      }
+
+      function loop() {
+        if (gameOver || !gameStarted) {
+          drawBackground();
+          return;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
+        drawFish();
+        drawPipes();
+        drawScore();
+        updateFish();
+        updatePipes();
+        frameCount++;
+        requestAnimationFrame(loop);
+      }
+
+      // Ensure images are loaded before starting
+      Promise.all([
+        new Promise((resolve) => (backgroundImg.onload = resolve)),
+        new Promise((resolve) => (fishImg.onload = resolve)),
+      ]).then(() => {
+        startScreen.style.display = "block";
+
+        playButton.addEventListener("click", () => {
+          startScreen.style.display = "none";
+          gameStarted = true;
+          resetGame();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.code === "Space" && !gameOver && gameStarted) {
+            fish.vy = flap;
+            flapSound.play();
+          }
+        });
+
+        canvas.addEventListener("click", () => {
+          if (!gameOver && gameStarted) {
+            fish.vy = flap;
+            flapSound.play();
+          }
+        });
+
+        playAgainBtn.addEventListener("click", resetGame);
+
+        window.addEventListener("online", () => {
+          offlineStatus.classList.add("hidden");
+        });
+
+        window.addEventListener("offline", () => {
+          offlineStatus.classList.remove("hidden");
+        });
+
+        if (!navigator.onLine) {
+          offlineStatus.classList.remove("hidden");
+        }
+
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register("service-worker.js");
+          });
+        }
+
+        loop();
+      });
+    </script>
+  </body>
+</html>
