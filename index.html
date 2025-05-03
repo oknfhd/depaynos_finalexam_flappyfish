@@ -120,7 +120,7 @@
 
       // Load images
       const backgroundImg = new Image();
-      backgroundImg.src = "assets/images/background.png";
+      backgroundImg.src = "assets/images/background-og.png";
       const fishImg = new Image();
       fishImg.src = "assets/images/fish.png";
 
@@ -130,10 +130,10 @@
       let score = 0;
       let gameOver = false;
       let gameStarted = false;
-      let gravity = 0.45; // Faster falling speed
-      let flap = -6; // Stronger flap power
-      let pipeSpeed = 2.5; // Faster pipe movement
-      let pipeGap = 150; // Slightly smaller gap for challenge
+      let gravity = 0.45; 
+      let flap = -6;
+      let pipeSpeed = 2.5; 
+      let pipeGap = 150;
       let frameCount = 0;
 
       function resetGame() {

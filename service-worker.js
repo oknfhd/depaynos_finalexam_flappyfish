@@ -5,7 +5,7 @@ const urlsToCache = [
   '/assets/audio/bgmusic.mp3',
   '/assets/audio/flap.mp3',
   '/assets/audio/hit.mp3',
-  '/assets/images/background.png',
+  '/assets/images/background-og.png',
   '/assets/images/fish.png',
   '/assets/images/icon.png',
   'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css'
