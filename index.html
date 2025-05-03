@@ -54,7 +54,7 @@
   <body class="flex justify-center items-center h-screen">
     <div class="text-center">
       <h1 class="text-2xl font-bold mb-2">Flappy Fish</h1>
-      <canvas id="gameCanvas" width="400" height="600"></canvas>
+      <canvas id="gameCanvas" width="400" height="650"></canvas>
       <div id="startScreen" class="p-8 rounded-lg text-center max-w-md">
         <h2
           class="text-3xl font-bold mb-4"
@@ -65,9 +65,9 @@
         <img
           src="assets/images/fish.png"
           class="fish-bob mx-auto mb-4"
-          style="width: 40px; height: 30px"
+          style="width: 50px; height: 50px"
         />
-        <p class="mb-2 text-lg font-bold">How to Play:</p>
+        <p class="mb-2 text-lg font-bold">How to play:</p>
         <ul class="list-disc list-inside mb-6 text-left">
           <li>Tap, click or press <strong>Space</strong> to swim up.</li>
           <li>Pass through pipe gaps to score.</li>
@@ -80,9 +80,14 @@
           Play
         </button>
       </div>
-      <div id="gameOverScreen" class="bg-white p-6 rounded shadow-lg">
+      <div id="gameOverScreen" class=" p-8 rounded text-center rounded-lg shadow-lg text-white" style="background-color: rgba(0, 0, 0, 0.6);">
         <h2 class="text-xl font-bold">Game Over</h2>
-        <p id="finalScore" class="my-2"></p>
+        <img
+          src="assets/images/fish.png"
+          class="fish-bob mx-auto"
+          style="width: 50px; height: 50px; rotate: 180deg;"
+        />
+        <p id="finalScore"></p>
         <button
           id="playAgain"
           class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
